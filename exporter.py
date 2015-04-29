@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
-# vk4xmpp gateway, v2.25
+# based on the vk4xmpp gateway, v2.25
 # © simpleApps, 2013 — 2014.
 # Program published under MIT license.
 
@@ -10,8 +10,6 @@ import json
 import logging
 import os
 import re
-import select
-import socket
 import signal
 import sys
 import threading
@@ -133,7 +131,6 @@ class VK(object):
 		else:
 			raise api.TokenError("%s, Where the hell is your token?" % self.source)
 
-	## TODO: this function must be rewritten. We have dict from self.method, so trying make int using dict is bad idea.
 	def checkToken(self):
 		"""
 		Checks the api token
@@ -185,11 +182,6 @@ class VK(object):
 			except api.InternalServerError as e:
 				logger.error("VK: internal server error occurred while executing method(%s) (%s)" % (method, e.message))
 
-##			except api.CaptchaNeeded:
-##				logger.error("VK: running captcha challenge (jid: %s)" % self.source)
-##				self.captchaChallenge()
-##				result = 0 ## why?
-
 			except api.NetworkNotFound:
 				logger.critical("VK: network is unavailable. Is vk down or you have network problems?")
 				self.online = False
@@ -199,21 +191,13 @@ class VK(object):
 				self.online = False
 		return result
 
-##	def captchaChallenge(self):
-##		"""
-##		Runs all handlers registered to event 04 (captcha)
-##		Removes user from poll until the challenge is done
-##		"""
-##		if self.engine.captcha:
-##			executeHandlers("evt04", (self,))
-
 	def disconnect(self):
 		"""
 		Stops all user handlers and removes himself from Poll
 		"""
 		logger.debug("VK: user has left")
 		self.online = False
-		runThread(self.method, ("account.setOffline", None, True, True)) ## Maybe this one should be started in separate thread to do not let VK freeze main thread
+		runThread(self.method, ("account.setOffline", None, True, True))
 
 	def getFriends(self, fields=None):
 		"""
@@ -283,12 +267,13 @@ if not os.path.exists("logs"):
 	os.makedirs("logs")
 loadExtensions("extensions")
 
-print "\nYou can get token over there: http://simpleapps.ru/vk4xmpp.html"
+# https://oauth.vk.com/authorize?scope=69638&redirect_uri=https%3A%2F%2Foauth.vk.com%2Fblank.html&display=mobile&client_id=3789129&response_type=token
+print "\nYou can get token over there: http://jabberon.ru/vk4xmpp.html"
 token = raw_input("\nToken: ")
 
 class User:
 	"""
-	A compability layer for vk4xmpp-extensions
+	A compatibility layer for vk4xmpp-extensions
 	"""
 	vk = VK()
 
@@ -332,3 +317,4 @@ for friend in user.vk.friends.keys():
 			date = datetime.fromtimestamp(message["date"]).strftime("%d.%m.%Y %H:%M:%S")
 			name = user.vk.getUserData(message["from_id"])["name"]
 			file.write(format % vars())
+print "Done. Check out the \"logs\" directory"
